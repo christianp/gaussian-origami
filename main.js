@@ -4355,6 +4355,29 @@ function _Browser_load(url)
 		}
 	}));
 }
+
+
+function _Url_percentEncode(string)
+{
+	return encodeURIComponent(string);
+}
+
+function _Url_percentDecode(string)
+{
+	try
+	{
+		return $elm$core$Maybe$Just(decodeURIComponent(string));
+	}
+	catch (e)
+	{
+		return $elm$core$Maybe$Nothing;
+	}
+}var $author$project$Main$ChangeUrlRequest = function (a) {
+	return {$: 'ChangeUrlRequest', a: a};
+};
+var $author$project$Main$UrlChanging = function (a) {
+	return {$: 'UrlChanging', a: a};
+};
 var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
@@ -5143,151 +5166,8 @@ var $elm$core$Task$perform = F2(
 			$elm$core$Task$Perform(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
-var $elm$browser$Browser$element = _Browser_element;
+var $elm$browser$Browser$application = _Browser_application;
 var $author$project$Main$Unfold = {$: 'Unfold'};
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Main$init = function (_v0) {
-	return _Utils_Tuple2(
-		{
-			command: $author$project$Main$Unfold,
-			mouse: _Utils_Tuple2(0.0, 0.0),
-			next: _List_Nil,
-			points: _List_fromArray(
-				[
-					_Utils_Tuple2(0, 0)
-				]),
-			previous: _List_Nil,
-			scale: 5
-		},
-		$elm$core$Platform$Cmd$none);
-};
-var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $author$project$Main$subscriptions = function (model) {
-	return $elm$core$Platform$Sub$none;
-};
-var $author$project$Main$Forwards = {$: 'Forwards'};
-var $author$project$Main$Horizontal = F2(
-	function (a, b) {
-		return {$: 'Horizontal', a: a, b: b};
-	});
-var $author$project$Main$Backwards = {$: 'Backwards'};
-var $author$project$Main$DownDiagonal = F2(
-	function (a, b) {
-		return {$: 'DownDiagonal', a: a, b: b};
-	});
-var $author$project$Main$UpDiagonal = F2(
-	function (a, b) {
-		return {$: 'UpDiagonal', a: a, b: b};
-	});
-var $elm$core$Basics$negate = function (n) {
-	return -n;
-};
-var $elm$core$Basics$abs = function (n) {
-	return (n < 0) ? (-n) : n;
-};
-var $elm$core$Basics$ge = _Utils_ge;
-var $elm$core$Basics$round = _Basics_round;
-var $author$project$Main$closest_horizontal_line = F2(
-	function (x, y) {
-		var iy = $elm$core$Basics$round(y);
-		var dir = (x >= 0) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
-		var d = $elm$core$Basics$abs(y - iy);
-		return _Utils_Tuple2(
-			A2($author$project$Main$Horizontal, iy, dir),
-			d);
-	});
-var $elm$core$Basics$sqrt = _Basics_sqrt;
-var $author$project$Main$s2 = 1.0 / $elm$core$Basics$sqrt(2);
-var $author$project$Main$rotate45 = F2(
-	function (x, y) {
-		return _Utils_Tuple2($author$project$Main$s2 * (y + x), $author$project$Main$s2 * (y - x));
-	});
-var $author$project$Main$closest_downdiagonal_line = F2(
-	function (x, y) {
-		var dir = (_Utils_cmp(x, -y) > -1) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
-		var _v0 = A2($author$project$Main$rotate45, x, y);
-		var rx = _v0.a;
-		var ry = _v0.b;
-		var _v1 = A2($author$project$Main$closest_horizontal_line, (rx / $author$project$Main$s2) / 2, (ry / $author$project$Main$s2) / 2);
-		var l = _v1.a;
-		var d = _v1.b;
-		if (l.$ === 'Horizontal') {
-			var z = l.a;
-			return _Utils_Tuple2(
-				A2($author$project$Main$DownDiagonal, z, dir),
-				d);
-		} else {
-			return _Utils_Tuple2(
-				A2($author$project$Main$UpDiagonal, 0, $author$project$Main$Forwards),
-				2);
-		}
-	});
-var $author$project$Main$Vertical = F2(
-	function (a, b) {
-		return {$: 'Vertical', a: a, b: b};
-	});
-var $author$project$Main$closest_vertical_line = F2(
-	function (x, y) {
-		var ix = $elm$core$Basics$round(x);
-		var dir = (y >= 0) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
-		var d = $elm$core$Basics$abs(x - ix);
-		return _Utils_Tuple2(
-			A2($author$project$Main$Vertical, ix, dir),
-			d);
-	});
-var $author$project$Main$closest_updiagonal_line = F2(
-	function (x, y) {
-		var dir = (_Utils_cmp(x, y) > -1) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
-		var _v0 = A2($author$project$Main$rotate45, x, y);
-		var rx = _v0.a;
-		var ry = _v0.b;
-		var _v1 = A2($author$project$Main$closest_vertical_line, (rx / $author$project$Main$s2) / 2, (ry / $author$project$Main$s2) / 2);
-		var l = _v1.a;
-		var d = _v1.b;
-		if (l.$ === 'Vertical') {
-			var z = l.a;
-			return _Utils_Tuple2(
-				A2($author$project$Main$UpDiagonal, z, dir),
-				d);
-		} else {
-			return _Utils_Tuple2(
-				A2($author$project$Main$UpDiagonal, 0, $author$project$Main$Forwards),
-				2);
-		}
-	});
-var $author$project$Main$lowest = F2(
-	function (_default, values) {
-		if (!values.b) {
-			return _default;
-		} else {
-			var _v1 = values.a;
-			var v = _v1.a;
-			var k = _v1.b;
-			var rest = values.b;
-			var _v2 = A2($author$project$Main$lowest, _default, rest);
-			var lv = _v2.a;
-			var lk = _v2.b;
-			return (_Utils_cmp(lk, k) < 0) ? _Utils_Tuple2(lv, lk) : _Utils_Tuple2(v, k);
-		}
-	});
-var $author$project$Main$closest_line = F2(
-	function (x, y) {
-		var lines = _List_fromArray(
-			[
-				A2($author$project$Main$closest_horizontal_line, x, y),
-				A2($author$project$Main$closest_vertical_line, x, y),
-				A2($author$project$Main$closest_updiagonal_line, x, y),
-				A2($author$project$Main$closest_downdiagonal_line, x, y)
-			]);
-		return A2(
-			$author$project$Main$lowest,
-			_Utils_Tuple2(
-				A2($author$project$Main$Horizontal, 0, $author$project$Main$Forwards),
-				2.0),
-			lines).a;
-	});
 var $elm$core$List$append = F2(
 	function (xs, ys) {
 		if (!ys.b) {
@@ -5304,6 +5184,9 @@ var $elm$core$List$concatMap = F2(
 		return $elm$core$List$concat(
 			A2($elm$core$List$map, f, list));
 	});
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
 var $author$project$Main$reflect = F2(
 	function (line, _v0) {
 		var px = _v0.a;
@@ -5497,197 +5380,172 @@ var $author$project$Main$unfold = F2(
 		return _List_fromArray(
 			[
 				p,
-				A2($author$project$Main$reflect, line, p)
+				A2($author$project$Main$fold, line, p)
 			]);
 	});
-var $author$project$Main$do_command = function (model) {
-	var _v0 = model.mouse;
-	var mx = _v0.a;
-	var my = _v0.b;
-	var line = A2($author$project$Main$closest_line, mx, my);
-	var cmd = function () {
-		var _v1 = model.command;
-		if (_v1.$ === 'Fold') {
-			return function (p) {
-				return _List_fromArray(
-					[
-						A2($author$project$Main$fold, line, p)
-					]);
-			};
+var $author$project$Main$do_command = F2(
+	function (_v0, points) {
+		var command = _v0.a;
+		var line = _v0.b;
+		var cmd = function () {
+			if (command.$ === 'Fold') {
+				return function (p) {
+					return _List_fromArray(
+						[
+							A2($author$project$Main$fold, line, p)
+						]);
+				};
+			} else {
+				return $author$project$Main$unfold(line);
+			}
+		}();
+		return $elm$core$Set$toList(
+			$elm$core$Set$fromList(
+				A2($elm$core$List$concatMap, cmd, points)));
+	});
+var $author$project$Main$do_commands = F2(
+	function (commands, points) {
+		var f = F2(
+			function (cmd, _v0) {
+				var opoints = _v0.a;
+				var history = _v0.b;
+				var npoints = A2($author$project$Main$do_command, cmd, opoints);
+				return _Utils_Tuple2(
+					npoints,
+					A2(
+						$elm$core$List$cons,
+						_Utils_Tuple2(opoints, cmd),
+						history));
+			});
+		return A3(
+			$elm$core$List$foldl,
+			f,
+			_Utils_Tuple2(points, _List_Nil),
+			commands);
+	});
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
 		} else {
-			return $author$project$Main$unfold(line);
-		}
-	}();
-	return $elm$core$Set$toList(
-		$elm$core$Set$fromList(
-			A2($elm$core$List$concatMap, cmd, model.points)));
-};
-var $author$project$Main$do_click = function (model) {
-	return _Utils_update(
-		model,
-		{
-			next: _List_Nil,
-			points: $author$project$Main$do_command(model),
-			previous: A2($elm$core$List$cons, model.points, model.previous)
-		});
-};
-var $author$project$Main$Fold = {$: 'Fold'};
-var $author$project$Main$opposite = function (cmd) {
-	if (cmd.$ === 'Fold') {
-		return $author$project$Main$Unfold;
-	} else {
-		return $author$project$Main$Fold;
-	}
-};
-var $author$project$Main$redo = function (model) {
-	var _v0 = model.next;
-	if (!_v0.b) {
-		return model;
-	} else {
-		var p = _v0.a;
-		var rest = _v0.b;
-		return _Utils_update(
-			model,
-			{
-				next: rest,
-				points: p,
-				previous: A2($elm$core$List$cons, model.points, model.previous)
-			});
-	}
-};
-var $author$project$Main$undo = function (model) {
-	var _v0 = model.previous;
-	if (!_v0.b) {
-		return model;
-	} else {
-		var p = _v0.a;
-		var rest = _v0.b;
-		return _Utils_update(
-			model,
-			{
-				next: A2($elm$core$List$cons, model.points, model.next),
-				points: p,
-				previous: rest
-			});
-	}
-};
-var $author$project$Main$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'Toggle':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							command: $author$project$Main$opposite(model.command)
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'Click':
-				return _Utils_Tuple2(
-					$author$project$Main$do_click(model),
-					$elm$core$Platform$Cmd$none);
-			case 'MouseMoveAt':
-				var x = msg.a;
-				var y = msg.b;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							mouse: _Utils_Tuple2(x, y)
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'ZoomIn':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							scale: A2($elm$core$Basics$max, 2, model.scale - 1)
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'ZoomOut':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{scale: model.scale + 1}),
-					$elm$core$Platform$Cmd$none);
-			case 'Undo':
-				return _Utils_Tuple2(
-					$author$project$Main$undo(model),
-					$elm$core$Platform$Cmd$none);
-			default:
-				return _Utils_Tuple2(
-					$author$project$Main$redo(model),
-					$elm$core$Platform$Cmd$none);
+			return $elm$core$Maybe$Nothing;
 		}
 	});
-var $author$project$Main$Redo = {$: 'Redo'};
-var $author$project$Main$Toggle = {$: 'Toggle'};
-var $author$project$Main$Undo = {$: 'Undo'};
-var $author$project$Main$ZoomIn = {$: 'ZoomIn'};
-var $author$project$Main$ZoomOut = {$: 'ZoomOut'};
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $author$project$Main$describeCommand = function (cmd) {
-	if (cmd.$ === 'Fold') {
-		return 'Folding';
-	} else {
-		return 'Unfolding';
+var $elm$url$Url$Parser$Internal$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$url$Url$Parser$Query$map = F2(
+	function (func, _v0) {
+		var a = _v0.a;
+		return $elm$url$Url$Parser$Internal$Parser(
+			function (dict) {
+				return func(
+					a(dict));
+			});
+	});
+var $elm$url$Url$Parser$State = F5(
+	function (visited, unvisited, params, frag, value) {
+		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
+	});
+var $elm$url$Url$Parser$getFirstMatch = function (states) {
+	getFirstMatch:
+	while (true) {
+		if (!states.b) {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var state = states.a;
+			var rest = states.b;
+			var _v1 = state.unvisited;
+			if (!_v1.b) {
+				return $elm$core$Maybe$Just(state.value);
+			} else {
+				if ((_v1.a === '') && (!_v1.b.b)) {
+					return $elm$core$Maybe$Just(state.value);
+				} else {
+					var $temp$states = rest;
+					states = $temp$states;
+					continue getFirstMatch;
+				}
+			}
+		}
 	}
 };
-var $elm$html$Html$div = _VirtualDom_node('div');
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
+var $elm$url$Url$Parser$removeFinalEmpty = function (segments) {
+	if (!segments.b) {
+		return _List_Nil;
+	} else {
+		if ((segments.a === '') && (!segments.b.b)) {
+			return _List_Nil;
+		} else {
+			var segment = segments.a;
+			var rest = segments.b;
+			return A2(
+				$elm$core$List$cons,
+				segment,
+				$elm$url$Url$Parser$removeFinalEmpty(rest));
+		}
+	}
 };
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
+var $elm$url$Url$Parser$preparePath = function (path) {
+	var _v0 = A2($elm$core$String$split, '/', path);
+	if (_v0.b && (_v0.a === '')) {
+		var segments = _v0.b;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	} else {
+		var segments = _v0;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	}
 };
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Main$Appearing = {$: 'Appearing'};
-var $author$project$Main$Click = {$: 'Click'};
-var $author$project$Main$Disappearing = {$: 'Disappearing'};
-var $author$project$Main$FixedPoint = {$: 'FixedPoint'};
-var $author$project$Main$MouseMoveAt = F2(
-	function (a, b) {
-		return {$: 'MouseMoveAt', a: a, b: b};
+var $elm$url$Url$Parser$addToParametersHelp = F2(
+	function (value, maybeList) {
+		if (maybeList.$ === 'Nothing') {
+			return $elm$core$Maybe$Just(
+				_List_fromArray(
+					[value]));
+		} else {
+			var list = maybeList.a;
+			return $elm$core$Maybe$Just(
+				A2($elm$core$List$cons, value, list));
+		}
 	});
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
-	});
-var $elm$core$Dict$foldl = F3(
-	function (func, acc, dict) {
-		foldl:
+var $elm$url$Url$percentDecode = _Url_percentDecode;
+var $elm$core$Dict$get = F2(
+	function (targetKey, dict) {
+		get:
 		while (true) {
 			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return acc;
+				return $elm$core$Maybe$Nothing;
 			} else {
 				var key = dict.b;
 				var value = dict.c;
 				var left = dict.d;
 				var right = dict.e;
-				var $temp$func = func,
-					$temp$acc = A3(
-					func,
-					key,
-					value,
-					A3($elm$core$Dict$foldl, func, acc, left)),
-					$temp$dict = right;
-				func = $temp$func;
-				acc = $temp$acc;
-				dict = $temp$dict;
-				continue foldl;
+				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
+				switch (_v1.$) {
+					case 'LT':
+						var $temp$targetKey = targetKey,
+							$temp$dict = left;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+					case 'EQ':
+						return $elm$core$Maybe$Just(value);
+					default:
+						var $temp$targetKey = targetKey,
+							$temp$dict = right;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+				}
 			}
 		}
 	});
@@ -6053,6 +5911,776 @@ var $elm$core$Dict$remove = F2(
 			return x;
 		}
 	});
+var $elm$core$Dict$update = F3(
+	function (targetKey, alter, dictionary) {
+		var _v0 = alter(
+			A2($elm$core$Dict$get, targetKey, dictionary));
+		if (_v0.$ === 'Just') {
+			var value = _v0.a;
+			return A3($elm$core$Dict$insert, targetKey, value, dictionary);
+		} else {
+			return A2($elm$core$Dict$remove, targetKey, dictionary);
+		}
+	});
+var $elm$url$Url$Parser$addParam = F2(
+	function (segment, dict) {
+		var _v0 = A2($elm$core$String$split, '=', segment);
+		if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
+			var rawKey = _v0.a;
+			var _v1 = _v0.b;
+			var rawValue = _v1.a;
+			var _v2 = $elm$url$Url$percentDecode(rawKey);
+			if (_v2.$ === 'Nothing') {
+				return dict;
+			} else {
+				var key = _v2.a;
+				var _v3 = $elm$url$Url$percentDecode(rawValue);
+				if (_v3.$ === 'Nothing') {
+					return dict;
+				} else {
+					var value = _v3.a;
+					return A3(
+						$elm$core$Dict$update,
+						key,
+						$elm$url$Url$Parser$addToParametersHelp(value),
+						dict);
+				}
+			}
+		} else {
+			return dict;
+		}
+	});
+var $elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
+	if (maybeQuery.$ === 'Nothing') {
+		return $elm$core$Dict$empty;
+	} else {
+		var qry = maybeQuery.a;
+		return A3(
+			$elm$core$List$foldr,
+			$elm$url$Url$Parser$addParam,
+			$elm$core$Dict$empty,
+			A2($elm$core$String$split, '&', qry));
+	}
+};
+var $elm$url$Url$Parser$parse = F2(
+	function (_v0, url) {
+		var parser = _v0.a;
+		return $elm$url$Url$Parser$getFirstMatch(
+			parser(
+				A5(
+					$elm$url$Url$Parser$State,
+					_List_Nil,
+					$elm$url$Url$Parser$preparePath(url.path),
+					$elm$url$Url$Parser$prepareQuery(url.query),
+					url.fragment,
+					$elm$core$Basics$identity)));
+	});
+var $elm$core$Maybe$andThen = F2(
+	function (callback, maybeValue) {
+		if (maybeValue.$ === 'Just') {
+			var value = maybeValue.a;
+			return callback(value);
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$Main$maybeAll = function (l) {
+	if (!l.b) {
+		return $elm$core$Maybe$Just(_List_Nil);
+	} else {
+		var a = l.a;
+		var rest = l.b;
+		if (a.$ === 'Just') {
+			var x = a.a;
+			return A2(
+				$elm$core$Maybe$andThen,
+				function (r) {
+					return $elm$core$Maybe$Just(
+						A2($elm$core$List$cons, x, r));
+				},
+				$author$project$Main$maybeAll(rest));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	}
+};
+var $author$project$Main$Backwards = {$: 'Backwards'};
+var $author$project$Main$DownDiagonal = F2(
+	function (a, b) {
+		return {$: 'DownDiagonal', a: a, b: b};
+	});
+var $author$project$Main$Fold = {$: 'Fold'};
+var $author$project$Main$Forwards = {$: 'Forwards'};
+var $author$project$Main$Horizontal = F2(
+	function (a, b) {
+		return {$: 'Horizontal', a: a, b: b};
+	});
+var $author$project$Main$UpDiagonal = F2(
+	function (a, b) {
+		return {$: 'UpDiagonal', a: a, b: b};
+	});
+var $author$project$Main$Vertical = F2(
+	function (a, b) {
+		return {$: 'Vertical', a: a, b: b};
+	});
+var $elm$core$Dict$fromList = function (assocs) {
+	return A3(
+		$elm$core$List$foldl,
+		F2(
+			function (_v0, dict) {
+				var key = _v0.a;
+				var value = _v0.b;
+				return A3($elm$core$Dict$insert, key, value, dict);
+			}),
+		$elm$core$Dict$empty,
+		assocs);
+};
+var $elm$core$Maybe$map4 = F5(
+	function (func, ma, mb, mc, md) {
+		if (ma.$ === 'Nothing') {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 'Nothing') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				if (mc.$ === 'Nothing') {
+					return $elm$core$Maybe$Nothing;
+				} else {
+					var c = mc.a;
+					if (md.$ === 'Nothing') {
+						return $elm$core$Maybe$Nothing;
+					} else {
+						var d = md.a;
+						return $elm$core$Maybe$Just(
+							A4(func, a, b, c, d));
+					}
+				}
+			}
+		}
+	});
+var $author$project$Main$parseStep = function (s) {
+	var z = $elm$core$String$toInt(
+		A2($elm$core$String$dropLeft, 3, s));
+	var orientations = $elm$core$Dict$fromList(
+		_List_fromArray(
+			[
+				_Utils_Tuple2('h', $author$project$Main$Horizontal),
+				_Utils_Tuple2('v', $author$project$Main$Vertical),
+				_Utils_Tuple2('u', $author$project$Main$UpDiagonal),
+				_Utils_Tuple2('d', $author$project$Main$DownDiagonal)
+			]));
+	var orientation = A2(
+		$elm$core$Dict$get,
+		A3($elm$core$String$slice, 1, 2, s),
+		orientations);
+	var directions = $elm$core$Dict$fromList(
+		_List_fromArray(
+			[
+				_Utils_Tuple2('f', $author$project$Main$Forwards),
+				_Utils_Tuple2('b', $author$project$Main$Backwards)
+			]));
+	var direction = A2(
+		$elm$core$Dict$get,
+		A3($elm$core$String$slice, 2, 3, s),
+		directions);
+	var cmds = $elm$core$Dict$fromList(
+		_List_fromArray(
+			[
+				_Utils_Tuple2('f', $author$project$Main$Fold),
+				_Utils_Tuple2('u', $author$project$Main$Unfold)
+			]));
+	var cmd = A2(
+		$elm$core$Dict$get,
+		A3($elm$core$String$slice, 0, 1, s),
+		cmds);
+	return A5(
+		$elm$core$Maybe$map4,
+		function (c) {
+			return function (o) {
+				return function (d) {
+					return function (i) {
+						return _Utils_Tuple2(
+							c,
+							A2(o, i, d));
+					};
+				};
+			};
+		},
+		cmd,
+		orientation,
+		direction,
+		z);
+};
+var $author$project$Main$parseSteps = A2(
+	$elm$core$Basics$composeR,
+	$elm$core$List$map($author$project$Main$parseStep),
+	$author$project$Main$maybeAll);
+var $elm$url$Url$Parser$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$url$Url$Parser$query = function (_v0) {
+	var queryParser = _v0.a;
+	return $elm$url$Url$Parser$Parser(
+		function (_v1) {
+			var visited = _v1.visited;
+			var unvisited = _v1.unvisited;
+			var params = _v1.params;
+			var frag = _v1.frag;
+			var value = _v1.value;
+			return _List_fromArray(
+				[
+					A5(
+					$elm$url$Url$Parser$State,
+					visited,
+					unvisited,
+					params,
+					frag,
+					value(
+						queryParser(params)))
+				]);
+		});
+};
+var $author$project$Main$step_separator = '!';
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $elm$url$Url$Parser$Query$custom = F2(
+	function (key, func) {
+		return $elm$url$Url$Parser$Internal$Parser(
+			function (dict) {
+				return func(
+					A2(
+						$elm$core$Maybe$withDefault,
+						_List_Nil,
+						A2($elm$core$Dict$get, key, dict)));
+			});
+	});
+var $elm$url$Url$Parser$Query$string = function (key) {
+	return A2(
+		$elm$url$Url$Parser$Query$custom,
+		key,
+		function (stringList) {
+			if (stringList.b && (!stringList.b.b)) {
+				var str = stringList.a;
+				return $elm$core$Maybe$Just(str);
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		});
+};
+var $author$project$Main$parseQuery = A2(
+	$elm$core$Basics$composeR,
+	$elm$url$Url$Parser$parse(
+		$elm$url$Url$Parser$query(
+			A2(
+				$elm$url$Url$Parser$Query$map,
+				$elm$core$Maybe$map(
+					$elm$core$String$split($author$project$Main$step_separator)),
+				$elm$url$Url$Parser$Query$string('steps')))),
+	A2(
+		$elm$core$Basics$composeR,
+		$elm$core$Maybe$withDefault(
+			$elm$core$Maybe$Just(_List_Nil)),
+		A2(
+			$elm$core$Basics$composeR,
+			$elm$core$Maybe$map($author$project$Main$parseSteps),
+			A2(
+				$elm$core$Basics$composeR,
+				$elm$core$Maybe$map(
+					$elm$core$Maybe$withDefault(_List_Nil)),
+				$elm$core$Maybe$withDefault(_List_Nil)))));
+var $author$project$Main$init = F3(
+	function (_v0, url, key) {
+		var steps = $author$project$Main$parseQuery(url);
+		var initpoints = _List_fromArray(
+			[
+				_Utils_Tuple2(0, 0)
+			]);
+		var _v1 = A2($author$project$Main$do_commands, steps, initpoints);
+		var points = _v1.a;
+		var previous = _v1.b;
+		return _Utils_Tuple2(
+			{
+				command: $author$project$Main$Unfold,
+				locationKey: key,
+				mouse: _Utils_Tuple2(0.0, 0.0),
+				next: _List_Nil,
+				points: points,
+				previous: previous,
+				scale: 5,
+				url: url
+			},
+			$elm$core$Platform$Cmd$none);
+	});
+var $elm$core$Platform$Sub$batch = _Platform_batch;
+var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $author$project$Main$subscriptions = function (model) {
+	return $elm$core$Platform$Sub$none;
+};
+var $elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var $elm$core$Basics$ge = _Utils_ge;
+var $elm$core$Basics$round = _Basics_round;
+var $author$project$Main$closest_horizontal_line = F2(
+	function (x, y) {
+		var iy = $elm$core$Basics$round(y);
+		var dir = (x >= 0) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
+		var d = $elm$core$Basics$abs(y - iy);
+		return _Utils_Tuple2(
+			A2($author$project$Main$Horizontal, iy, dir),
+			d);
+	});
+var $elm$core$Basics$sqrt = _Basics_sqrt;
+var $author$project$Main$s2 = 1.0 / $elm$core$Basics$sqrt(2);
+var $author$project$Main$rotate45 = F2(
+	function (x, y) {
+		return _Utils_Tuple2($author$project$Main$s2 * (y + x), $author$project$Main$s2 * (y - x));
+	});
+var $author$project$Main$closest_downdiagonal_line = F2(
+	function (x, y) {
+		var dir = (_Utils_cmp(x, -y) > -1) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
+		var _v0 = A2($author$project$Main$rotate45, x, y);
+		var rx = _v0.a;
+		var ry = _v0.b;
+		var _v1 = A2($author$project$Main$closest_horizontal_line, (rx / $author$project$Main$s2) / 2, (ry / $author$project$Main$s2) / 2);
+		var l = _v1.a;
+		var d = _v1.b;
+		if (l.$ === 'Horizontal') {
+			var z = l.a;
+			return _Utils_Tuple2(
+				A2($author$project$Main$DownDiagonal, z, dir),
+				d);
+		} else {
+			return _Utils_Tuple2(
+				A2($author$project$Main$UpDiagonal, 0, $author$project$Main$Forwards),
+				2);
+		}
+	});
+var $author$project$Main$closest_vertical_line = F2(
+	function (x, y) {
+		var ix = $elm$core$Basics$round(x);
+		var dir = (y >= 0) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
+		var d = $elm$core$Basics$abs(x - ix);
+		return _Utils_Tuple2(
+			A2($author$project$Main$Vertical, ix, dir),
+			d);
+	});
+var $author$project$Main$closest_updiagonal_line = F2(
+	function (x, y) {
+		var dir = (_Utils_cmp(x, y) > -1) ? $author$project$Main$Forwards : $author$project$Main$Backwards;
+		var _v0 = A2($author$project$Main$rotate45, x, y);
+		var rx = _v0.a;
+		var ry = _v0.b;
+		var _v1 = A2($author$project$Main$closest_vertical_line, (rx / $author$project$Main$s2) / 2, (ry / $author$project$Main$s2) / 2);
+		var l = _v1.a;
+		var d = _v1.b;
+		if (l.$ === 'Vertical') {
+			var z = l.a;
+			return _Utils_Tuple2(
+				A2($author$project$Main$UpDiagonal, z, dir),
+				d);
+		} else {
+			return _Utils_Tuple2(
+				A2($author$project$Main$UpDiagonal, 0, $author$project$Main$Forwards),
+				2);
+		}
+	});
+var $author$project$Main$lowest = F2(
+	function (_default, values) {
+		if (!values.b) {
+			return _default;
+		} else {
+			var _v1 = values.a;
+			var v = _v1.a;
+			var k = _v1.b;
+			var rest = values.b;
+			var _v2 = A2($author$project$Main$lowest, _default, rest);
+			var lv = _v2.a;
+			var lk = _v2.b;
+			return (_Utils_cmp(lk, k) < 0) ? _Utils_Tuple2(lv, lk) : _Utils_Tuple2(v, k);
+		}
+	});
+var $author$project$Main$closest_line = F2(
+	function (x, y) {
+		var lines = _List_fromArray(
+			[
+				A2($author$project$Main$closest_horizontal_line, x, y),
+				A2($author$project$Main$closest_vertical_line, x, y),
+				A2($author$project$Main$closest_updiagonal_line, x, y),
+				A2($author$project$Main$closest_downdiagonal_line, x, y)
+			]);
+		return A2(
+			$author$project$Main$lowest,
+			_Utils_Tuple2(
+				A2($author$project$Main$Horizontal, 0, $author$project$Main$Forwards),
+				2.0),
+			lines).a;
+	});
+var $author$project$Main$make_command = function (model) {
+	var _v0 = model.mouse;
+	var mx = _v0.a;
+	var my = _v0.b;
+	var line = A2($author$project$Main$closest_line, mx, my);
+	return _Utils_Tuple2(model.command, line);
+};
+var $author$project$Main$do_click = function (model) {
+	var cmd = $author$project$Main$make_command(model);
+	var _v0 = model.mouse;
+	var mx = _v0.a;
+	var my = _v0.b;
+	var line = A2($author$project$Main$closest_line, mx, my);
+	return _Utils_update(
+		model,
+		{
+			next: _List_Nil,
+			points: A2($author$project$Main$do_command, cmd, model.points),
+			previous: A2(
+				$elm$core$List$cons,
+				_Utils_Tuple2(model.points, cmd),
+				model.previous)
+		});
+};
+var $author$project$Main$opposite = function (cmd) {
+	if (cmd.$ === 'Fold') {
+		return $author$project$Main$Unfold;
+	} else {
+		return $author$project$Main$Fold;
+	}
+};
+var $author$project$Main$redo = function (model) {
+	var _v0 = model.next;
+	if (!_v0.b) {
+		return model;
+	} else {
+		var _v1 = _v0.a;
+		var p = _v1.a;
+		var cmd = _v1.b;
+		var rest = _v0.b;
+		return _Utils_update(
+			model,
+			{
+				next: rest,
+				points: p,
+				previous: A2(
+					$elm$core$List$cons,
+					_Utils_Tuple2(model.points, cmd),
+					model.previous)
+			});
+	}
+};
+var $author$project$Main$buildStep = function (_v0) {
+	var cmd = _v0.a;
+	var line = _v0.b;
+	var c = function () {
+		if (cmd.$ === 'Fold') {
+			return 'f';
+		} else {
+			return 'u';
+		}
+	}();
+	var _v1 = function () {
+		switch (line.$) {
+			case 'Horizontal':
+				var z = line.a;
+				var dir = line.b;
+				return _Utils_Tuple3('h', z, dir);
+			case 'Vertical':
+				var z = line.a;
+				var dir = line.b;
+				return _Utils_Tuple3('v', z, dir);
+			case 'UpDiagonal':
+				var z = line.a;
+				var dir = line.b;
+				return _Utils_Tuple3('u', z, dir);
+			default:
+				var z = line.a;
+				var dir = line.b;
+				return _Utils_Tuple3('d', z, dir);
+		}
+	}();
+	var o = _v1.a;
+	var zz = _v1.b;
+	var dd = _v1.c;
+	var d = function () {
+		if (dd.$ === 'Forwards') {
+			return 'f';
+		} else {
+			return 'b';
+		}
+	}();
+	var i = $elm$core$String$fromInt(zz);
+	return _Utils_ap(
+		c,
+		_Utils_ap(
+			o,
+			_Utils_ap(d, i)));
+};
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
+var $elm$url$Url$Builder$QueryParameter = F2(
+	function (a, b) {
+		return {$: 'QueryParameter', a: a, b: b};
+	});
+var $elm$url$Url$percentEncode = _Url_percentEncode;
+var $elm$url$Url$Builder$string = F2(
+	function (key, value) {
+		return A2(
+			$elm$url$Url$Builder$QueryParameter,
+			$elm$url$Url$percentEncode(key),
+			$elm$url$Url$percentEncode(value));
+	});
+var $elm$url$Url$Builder$toQueryPair = function (_v0) {
+	var key = _v0.a;
+	var value = _v0.b;
+	return key + ('=' + value);
+};
+var $elm$url$Url$Builder$toQuery = function (parameters) {
+	if (!parameters.b) {
+		return '';
+	} else {
+		return '?' + A2(
+			$elm$core$String$join,
+			'&',
+			A2($elm$core$List$map, $elm$url$Url$Builder$toQueryPair, parameters));
+	}
+};
+var $author$project$Main$buildQuery = function (model) {
+	return A2(
+		$elm$core$String$dropLeft,
+		1,
+		function (s) {
+			return $elm$url$Url$Builder$toQuery(
+				_List_fromArray(
+					[
+						A2($elm$url$Url$Builder$string, 'steps', s)
+					]));
+		}(
+			A2(
+				$elm$core$String$join,
+				$author$project$Main$step_separator,
+				$elm$core$List$reverse(
+					A2(
+						$elm$core$List$map,
+						A2($elm$core$Basics$composeR, $elm$core$Tuple$second, $author$project$Main$buildStep),
+						model.previous)))));
+};
+var $elm$browser$Browser$Navigation$replaceUrl = _Browser_replaceUrl;
+var $elm$url$Url$addPort = F2(
+	function (maybePort, starter) {
+		if (maybePort.$ === 'Nothing') {
+			return starter;
+		} else {
+			var port_ = maybePort.a;
+			return starter + (':' + $elm$core$String$fromInt(port_));
+		}
+	});
+var $elm$url$Url$addPrefixed = F3(
+	function (prefix, maybeSegment, starter) {
+		if (maybeSegment.$ === 'Nothing') {
+			return starter;
+		} else {
+			var segment = maybeSegment.a;
+			return _Utils_ap(
+				starter,
+				_Utils_ap(prefix, segment));
+		}
+	});
+var $elm$url$Url$toString = function (url) {
+	var http = function () {
+		var _v0 = url.protocol;
+		if (_v0.$ === 'Http') {
+			return 'http://';
+		} else {
+			return 'https://';
+		}
+	}();
+	return A3(
+		$elm$url$Url$addPrefixed,
+		'#',
+		url.fragment,
+		A3(
+			$elm$url$Url$addPrefixed,
+			'?',
+			url.query,
+			_Utils_ap(
+				A2(
+					$elm$url$Url$addPort,
+					url.port_,
+					_Utils_ap(http, url.host)),
+				url.path)));
+};
+var $author$project$Main$setUrl = function (model) {
+	var url = model.url;
+	var nurl = _Utils_update(
+		url,
+		{
+			query: $elm$core$Maybe$Just(
+				$author$project$Main$buildQuery(model))
+		});
+	return _Utils_Tuple2(
+		model,
+		A2(
+			$elm$browser$Browser$Navigation$replaceUrl,
+			model.locationKey,
+			$elm$url$Url$toString(nurl)));
+};
+var $author$project$Main$undo = function (model) {
+	var _v0 = model.previous;
+	if (!_v0.b) {
+		return model;
+	} else {
+		var _v1 = _v0.a;
+		var p = _v1.a;
+		var cmd = _v1.b;
+		var rest = _v0.b;
+		return _Utils_update(
+			model,
+			{
+				next: A2(
+					$elm$core$List$cons,
+					_Utils_Tuple2(model.points, cmd),
+					model.next),
+				points: p,
+				previous: rest
+			});
+	}
+};
+var $author$project$Main$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'Toggle':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							command: $author$project$Main$opposite(model.command)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'Click':
+				return $author$project$Main$setUrl(
+					$author$project$Main$do_click(model));
+			case 'MouseMoveAt':
+				var x = msg.a;
+				var y = msg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							mouse: _Utils_Tuple2(x, y)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'ZoomIn':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							scale: A2($elm$core$Basics$max, 2, model.scale - 1)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'ZoomOut':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{scale: model.scale + 1}),
+					$elm$core$Platform$Cmd$none);
+			case 'Undo':
+				return $author$project$Main$setUrl(
+					$author$project$Main$undo(model));
+			case 'Redo':
+				return $author$project$Main$setUrl(
+					$author$project$Main$redo(model));
+			case 'ChangeUrlRequest':
+				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+		}
+	});
+var $author$project$Main$Redo = {$: 'Redo'};
+var $author$project$Main$Toggle = {$: 'Toggle'};
+var $author$project$Main$Undo = {$: 'Undo'};
+var $author$project$Main$ZoomIn = {$: 'ZoomIn'};
+var $author$project$Main$ZoomOut = {$: 'ZoomOut'};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $author$project$Main$describeCommand = function (cmd) {
+	if (cmd.$ === 'Fold') {
+		return 'Folding';
+	} else {
+		return 'Unfolding';
+	}
+};
+var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $author$project$Main$show_steps = function (model) {
+	var n = $elm$core$List$length(model.previous);
+	return $elm$core$String$fromInt(n) + (' ' + ((n === 1) ? 'step' : 'steps'));
+};
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $author$project$Main$Appearing = {$: 'Appearing'};
+var $author$project$Main$Click = {$: 'Click'};
+var $author$project$Main$Disappearing = {$: 'Disappearing'};
+var $author$project$Main$FixedPoint = {$: 'FixedPoint'};
+var $author$project$Main$MouseMoveAt = F2(
+	function (a, b) {
+		return {$: 'MouseMoveAt', a: a, b: b};
+	});
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$core$Dict$foldl = F3(
+	function (func, acc, dict) {
+		foldl:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3($elm$core$Dict$foldl, func, acc, left)),
+					$temp$dict = right;
+				func = $temp$func;
+				acc = $temp$acc;
+				dict = $temp$dict;
+				continue foldl;
+			}
+		}
+	});
 var $elm$core$Dict$diff = F2(
 	function (t1, t2) {
 		return A3(
@@ -6084,37 +6712,6 @@ var $elm$core$Dict$filter = F2(
 				}),
 			$elm$core$Dict$empty,
 			dict);
-	});
-var $elm$core$Dict$get = F2(
-	function (targetKey, dict) {
-		get:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
-				switch (_v1.$) {
-					case 'LT':
-						var $temp$targetKey = targetKey,
-							$temp$dict = left;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-					case 'EQ':
-						return $elm$core$Maybe$Just(value);
-					default:
-						var $temp$targetKey = targetKey,
-							$temp$dict = right;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-				}
-			}
-		}
 	});
 var $elm$core$Dict$member = F2(
 	function (key, dict) {
@@ -6341,7 +6938,10 @@ var $author$project$Main$viewSVG = function (model) {
 				[-scale, -scale, 2 * scale, 2 * scale])));
 	var pointset = $elm$core$Set$fromList(model.points);
 	var nextpoints = $elm$core$Set$fromList(
-		$author$project$Main$do_command(model));
+		A2(
+			$author$project$Main$do_command,
+			$author$project$Main$make_command(model),
+			model.points));
 	var newpoints = $elm$core$Set$toList(
 		A2($elm$core$Set$diff, nextpoints, pointset));
 	var fixedpoints = $elm$core$Set$toList(
@@ -6424,10 +7024,8 @@ var $author$project$Main$viewSVG = function (model) {
 								])))))));
 };
 var $author$project$Main$view = function (model) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
+	return {
+		body: _List_fromArray(
 			[
 				A2(
 				$elm$html$Html$div,
@@ -6486,13 +7084,14 @@ var $author$project$Main$view = function (model) {
 								$elm$html$Html$text('Redo')
 							])),
 						$elm$html$Html$text(
-						$elm$core$String$fromInt(
-							$elm$core$List$length(model.previous)))
+						$author$project$Main$show_steps(model))
 					])),
 				$author$project$Main$viewSVG(model)
-			]));
+			]),
+		title: 'Gaussian Origami'
+	};
 };
-var $author$project$Main$main = $elm$browser$Browser$element(
-	{init: $author$project$Main$init, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});
+var $author$project$Main$main = $elm$browser$Browser$application(
+	{init: $author$project$Main$init, onUrlChange: $author$project$Main$UrlChanging, onUrlRequest: $author$project$Main$ChangeUrlRequest, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});
 _Platform_export({'Main':{'init':$author$project$Main$main(
 	$elm$json$Json$Decode$succeed(_Utils_Tuple0))(0)}});}(this));

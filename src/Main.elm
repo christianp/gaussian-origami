@@ -9,7 +9,13 @@ module Main exposing (..)
 --   https://elm-lang.org/examples/time
 --
 
-import Browser
+import Browser exposing (Document)
+import Browser.Navigation as Navigation exposing (Key, replaceUrl)
+import Dict
+import Url exposing (Url)
+import Url.Builder as UB exposing (toQuery)
+import Url.Parser exposing (Parser, parse, query)
+import Url.Parser.Query as QP
 import Html exposing (Html, div, button)
 import Html.Events
 import Svg exposing (..)
@@ -25,11 +31,13 @@ import Svg.Keyed
 
 
 main =
-  Browser.element
+  Browser.application
     { init = init
     , view = view
     , update = update
     , subscriptions = subscriptions
+    , onUrlRequest = ChangeUrlRequest
+    , onUrlChange = UrlChanging
     }
 
 
@@ -57,26 +65,37 @@ type PointStatus
  | Disappearing
  | Appearing
 
+type alias Step = (List Point, (Command, Line))
+
 type alias Model =
   { points : List Point
   , command : Command
   , mouse : (Float, Float)
   , scale: Int
-  , previous : List (List Point)
-  , next: List (List Point)
+  , previous : List Step
+  , next: List Step
+  , url : Url
+  , locationKey : Key
   }
 
-init : () -> (Model, Cmd Msg)
-init _ =
-  ( { points = [(0,0)]
-    , command = Unfold
-    , mouse = (0.0, 0.0)
-    , scale = 5
-    , previous = []
-    , next = []
-    }
-  , Cmd.none
-  )
+init : () -> Url -> Key -> (Model, Cmd Msg)
+init _ url key =
+    let
+        steps = parseQuery url
+        initpoints = [(0,0)]
+        (points,previous) = do_commands steps initpoints
+    in
+        ( { points = points
+          , command = Unfold
+          , mouse = (0.0, 0.0)
+          , scale = 5
+          , previous = previous
+          , next = []
+          , url = url
+          , locationKey = key
+          }
+          , Cmd.none
+          )
 
 
 opposite : Command -> Command
@@ -96,6 +115,8 @@ type Msg
   | ZoomOut
   | Undo
   | Redo
+  | ChangeUrlRequest Browser.UrlRequest
+  | UrlChanging Url
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -105,10 +126,7 @@ update msg model =
       , Cmd.none
       )
 
-    Click ->
-      ( do_click model
-      , Cmd.none
-      )
+    Click -> setUrl <| do_click model
       
     MouseMoveAt x y -> 
       ( { model | mouse = (x,y)}
@@ -125,29 +143,61 @@ update msg model =
       , Cmd.none
       )
       
-    Undo -> (undo model, Cmd.none)
-    Redo -> (redo model, Cmd.none)
+    Undo -> setUrl <| undo model
+    Redo -> setUrl <| redo model
+
+    ChangeUrlRequest _ -> (model, Cmd.none)
+    UrlChanging _ -> (model, Cmd.none)
+
+setUrl model =
+    let
+        url = model.url
+        nurl = {url | query = Just <| buildQuery model}
+    in
+        (model,replaceUrl model.locationKey (Url.toString nurl))
 
 undo model = case model.previous of
     [] -> model
-    p::rest -> { model | points = p, previous = rest, next = model.points::model.next }
+    (p,cmd)::rest -> { model | points = p, previous = rest, next = (model.points,cmd)::model.next }
 
 redo model = case model.next of
     [] -> model
-    p::rest -> { model | points = p, next = rest, previous = model.points::model.previous }
+    (p,cmd)::rest -> { model | points = p, next = rest, previous = (model.points,cmd)::model.previous }
     
 do_click : Model -> Model
-do_click model = {model | points = do_command model, previous = (model.points)::model.previous, next = [] }
-
-do_command model =
+do_click model = 
     let
         (mx,my) = model.mouse
         line = closest_line mx my
-        cmd = case model.command of
+        cmd = (make_command model)
+    in
+        {model | points = do_command cmd model.points, previous = (model.points,cmd)::model.previous, next = [] }
+
+make_command model = 
+    let
+        (mx,my) = model.mouse
+        line = closest_line mx my
+    in
+        (model.command, line)
+        
+
+do_command (command,line) points =
+    let
+        cmd = case command of
             Fold -> \p -> [fold line p]
             Unfold -> unfold line
     in
-        Set.toList <| Set.fromList <| List.concatMap cmd model.points
+        Set.toList <| Set.fromList <| List.concatMap cmd points
+
+do_commands commands points =
+    let
+        f cmd (opoints,history) = 
+            let
+                npoints = do_command cmd opoints
+            in
+                (npoints,(opoints,cmd)::history)
+    in
+        List.foldl f (points,[]) commands
 
 closest_horizontal_line : Float -> Float -> (Line, Float)
 closest_horizontal_line x y =
@@ -236,7 +286,7 @@ fold line p =
                     Forwards -> if px > 2*z-py then rp else p
                     Backwards -> if px < 2*z-py then rp else p
                     
-unfold line p = [p, reflect line p]
+unfold line p = [p, fold line p]
 
 reflect : Line -> Point -> Point
 reflect line (px,py) = case line of
@@ -260,47 +310,105 @@ subscriptions model =
 cartesian_product l1 l2 = List.foldl (++) [] (List.map (\a -> List.map (\b -> (a,b)) l2) l2)
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 
 view model = 
-  div []
-  [ div [] 
-    [ button [ Html.Events.onClick Toggle] [ Html.text <| describeCommand model.command ]
-    , button [ Html.Events.onClick ZoomIn] [ Html.text "Zoom in" ]
-    , button [ Html.Events.onClick ZoomOut] [ Html.text "Zoom out" ]
-    , button [ Html.Events.onClick Undo] [ Html.text "Undo" ]
-    , button [ Html.Events.onClick Redo] [ Html.text "Redo" ]
-    , Html.text <| String.fromInt <| List.length model.previous
-    ]
-  , viewSVG model
-  ]
+  { title = "Gaussian Origami"
+  , body =
+      [ div [] 
+        [ button [ Html.Events.onClick Toggle] [ Html.text <| describeCommand model.command ]
+        , button [ Html.Events.onClick ZoomIn] [ Html.text "Zoom in" ]
+        , button [ Html.Events.onClick ZoomOut] [ Html.text "Zoom out" ]
+        , button [ Html.Events.onClick Undo] [ Html.text "Undo" ]
+        , button [ Html.Events.onClick Redo] [ Html.text "Redo" ]
+        , Html.text <| show_steps model
+--        , Html.text <| debugstring model
+        ]
+      , viewSVG model
+      ]
+  }
   
 describeCommand cmd = case cmd of
     Fold -> "Folding"
     Unfold -> "Unfolding"
-  
+
+step_separator = "!"
+
+parseQuery = (QP.string "steps" |> QP.map (Maybe.map <| String.split step_separator) |> query |> parse) >> Maybe.withDefault (Just []) >> Maybe.map parseSteps >> Maybe.map (Maybe.withDefault []) >> Maybe.withDefault []
+
+parseSteps : List String -> Maybe (List (Command, Line))
+parseSteps = List.map parseStep >> maybeAll
+
+maybeAll : List (Maybe a) -> Maybe (List a)
+maybeAll l = case l of
+    [] -> Just []
+    a::rest -> case a of
+        Just x -> maybeAll rest |> Maybe.andThen (\r -> Just (x::r))
+        Nothing -> Nothing
+
+parseStep : String -> Maybe (Command, Line)
+parseStep s = 
+    let
+        cmds = Dict.fromList
+            [ ("f",Fold)
+            , ("u",Unfold)
+            ]
+        cmd = Dict.get (String.slice 0 1 s) cmds
+        orientations = Dict.fromList
+            [ ("h",Horizontal)
+            , ("v",Vertical)
+            , ("u",UpDiagonal)
+            , ("d",DownDiagonal)
+            ]
+        orientation = Dict.get (String.slice 1 2 s) orientations
+        directions = Dict.fromList
+            [ ("f",Forwards)
+            , ("b",Backwards)
+            ]
+        direction = Dict.get (String.slice 2 3 s) directions
+        z = String.dropLeft 3 s |> String.toInt
+    in
+        Maybe.map4 (\c -> \o -> \d -> \i -> (c,o i d)) cmd orientation direction z
+
+
+buildQuery : Model -> String
+buildQuery model = List.map (second >> buildStep) model.previous |> List.reverse |> String.join step_separator |> (\s -> toQuery [UB.string "steps" s]) |> String.dropLeft 1
+        
+buildStep (cmd,line) =
+    let
+        c = case cmd of
+            Fold -> "f"
+            Unfold -> "u"
+        (o,zz,dd) = case line of
+            Horizontal z dir -> ("h",z,dir)
+            Vertical z dir -> ("v",z,dir)
+            UpDiagonal z dir -> ("u",z,dir)
+            DownDiagonal z dir -> ("d",z,dir)
+        i = String.fromInt zz
+        d = case dd of
+            Forwards -> "f"
+            Backwards -> "b"
+    in
+        c++o++d++i
+
+show_steps model =
+    let
+        n = List.length model.previous
+    in
+        (String.fromInt n)++" "++(if n==1 then "step" else "steps")
+
 debugstring model =
     let
-        (x,y) = model.mouse
-        line = closest_line x y
-        (i,dir) = case line of
-            Horizontal n d -> (n,d)
-            Vertical n d -> (n,d)
-            UpDiagonal n d -> (n,d)
-            DownDiagonal n d -> (n,d)
-        sdir = case dir of
-            Forwards -> "forwards"
-            Backwards -> "backwards"
-        si = String.fromInt i
+        steps = buildQuery model
     in
-        sdir++" "++si++" "++(String.fromInt <| List.length model.points)
+        Debug.toString steps
 
 draw_bound = 100
 
 viewSVG model =
     let
         pointset = Set.fromList model.points
-        nextpoints = Set.fromList <| do_command model
+        nextpoints = Set.fromList <| do_command (make_command model) model.points
         newpoints = Set.toList <| Set.diff nextpoints pointset
         disappearingpoints = Set.toList <| Set.diff pointset nextpoints
         fixedpoints = Set.toList <| Set.intersect pointset nextpoints
