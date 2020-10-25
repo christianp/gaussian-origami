@@ -18,6 +18,7 @@ import Url.Parser exposing (Parser, parse, query)
 import Url.Parser.Query as QP
 import Html exposing (Html, div, button)
 import Html.Events
+import Html.Attributes as HA
 import Svg exposing (..)
 import Svg.Events as Events
 import Json.Decode as Decode
@@ -25,6 +26,7 @@ import Svg.Attributes exposing (..)
 import Tuple exposing (first, second)
 import Set
 import Svg.Keyed
+import Markdown
 
 
 -- MAIN
@@ -46,32 +48,48 @@ main =
 
 type alias Point = (Int,Int)
 
+type alias Rect =
+ { x1 : Int
+ , y1 : Int
+ , x2 : Int
+ , y2 : Int
+ }
+
+type LineStyle
+ = Normal
+ | Selecting
+ | Deselecting
+ | Selected
+
 type Direction
  = Forwards
  | Backwards
 
 type Line
- = Horizontal Int Direction -- crosses y axis at Int
- | Vertical Int Direction -- crosses x axis at Int
- | UpDiagonal Int Direction -- positive gradient, crosses y axis at Int
- | DownDiagonal Int Direction -- negative gradient, crosses y axis at Int
+ = Horizontal Int -- crosses y axis at Int
+ | Vertical Int -- crosses x axis at Int
+ | UpDiagonal Int -- positive gradient, crosses y axis at Int
+ | DownDiagonal Int -- negative gradient, crosses y axis at Int
 
 type Command
  = Fold
  | Unfold
+
+type alias Move = (Command,Direction,Line)
 
 type PointStatus
  = FixedPoint
  | Disappearing
  | Appearing
 
-type alias Step = (List Point, (Command, Line))
+type alias Step = (List Point, Move)
 
 type alias Model =
   { points : List Point
   , command : Command
   , mouse : (Float, Float)
   , scale: Int
+  , selectedLine: Maybe Line
   , previous : List Step
   , next: List Step
   , url : Url
@@ -89,6 +107,7 @@ init _ url key =
           , command = Unfold
           , mouse = (0.0, 0.0)
           , scale = 5
+          , selectedLine = Nothing
           , previous = previous
           , next = []
           , url = url
@@ -126,7 +145,7 @@ update msg model =
       , Cmd.none
       )
 
-    Click -> setUrl <| do_click model
+    Click -> do_click model
       
     MouseMoveAt x y -> 
       ( { model | mouse = (x,y)}
@@ -164,31 +183,41 @@ redo model = case model.next of
     [] -> model
     (p,cmd)::rest -> { model | points = p, next = rest, previous = (model.points,cmd)::model.previous }
     
-do_click : Model -> Model
+do_click : Model -> (Model, Cmd Msg)
 do_click model = 
     let
-        (mx,my) = model.mouse
-        line = closest_line mx my
-        cmd = (make_command model)
+        (dir,line) = closest_line model.mouse
+        cmd = make_command model
     in
-        {model | points = do_command cmd model.points, previous = (model.points,cmd)::model.previous, next = [] }
+        case model.selectedLine of
+            Nothing -> ( {model | selectedLine = Just line}, Cmd.none)
+            Just l -> if line==l then ({model | selectedLine = Nothing}, Cmd.none) else (setUrl <| do_move model l)
 
-make_command model = 
+do_move : Model -> Line -> Model
+do_move model line =
     let
-        (mx,my) = model.mouse
-        line = closest_line mx my
+        dir = side_of line model.mouse
+        cmd = (model.command, dir, line)
+        npoints = do_command cmd model.points
     in
-        (model.command, line)
-        
+        if npoints==model.points then 
+            {model | selectedLine = Nothing}
+        else
+            {model | points = npoints, previous = (model.points,cmd)::model.previous, next = [], selectedLine = Nothing }
 
-do_command (command,line) points =
+make_command : Model -> Maybe Move
+make_command model = Maybe.map (\l -> (model.command, side_of l model.mouse, l)) model.selectedLine
+            
+
+do_command (command,dir,line) points =
     let
         cmd = case command of
-            Fold -> \p -> [fold line p]
-            Unfold -> unfold line
+            Fold -> \p -> [fold (dir,line) p]
+            Unfold -> unfold (dir,line)
     in
         Set.toList <| Set.fromList <| List.concatMap cmd points
 
+do_commands : List Move -> List Point -> (List Point, List Step)
 do_commands commands points =
     let
         f cmd (opoints,history) = 
@@ -199,29 +228,29 @@ do_commands commands points =
     in
         List.foldl f (points,[]) commands
 
-closest_horizontal_line : Float -> Float -> (Line, Float)
+closest_horizontal_line : Float -> Float -> ((Direction,Line), Float)
 closest_horizontal_line x y =
     let
         iy = round y
         d = abs (y - (toFloat iy))
         dir = if x>=0 then Forwards else Backwards
     in
-        (Horizontal iy dir, d)
+        ((dir,Horizontal iy), d)
 
-closest_vertical_line : Float -> Float -> (Line, Float)
+closest_vertical_line : Float -> Float -> ((Direction,Line), Float)
 closest_vertical_line x y =
     let
         ix = round x
         d = abs (x - (toFloat ix))
         dir = if y>=0 then Forwards else Backwards
     in
-        (Vertical ix dir, d)
+        ((dir,Vertical ix), d)
         
 s2 = 1.0 / (sqrt 2)
 
 rotate45 x y = (s2 * (y + x), s2 * (y - x))
 
-closest_downdiagonal_line : Float -> Float -> (Line, Float)
+closest_downdiagonal_line : Float -> Float -> ((Direction,Line), Float)
 closest_downdiagonal_line x y =
     let
         (rx,ry) = rotate45 x y
@@ -229,10 +258,10 @@ closest_downdiagonal_line x y =
         dir = if x >= -y then Forwards else Backwards
     in
         case l of
-            Horizontal z _ -> (DownDiagonal z dir, d)
-            _ -> (UpDiagonal 0 Forwards, 2)
+            (_,Horizontal z) -> ((dir,DownDiagonal z), d)
+            _ -> ((Forwards,UpDiagonal 0), 2)
 
-closest_updiagonal_line : Float -> Float -> (Line, Float)
+closest_updiagonal_line : Float -> Float -> ((Direction,Line), Float)
 closest_updiagonal_line x y =
     let
         (rx,ry) = rotate45 x y
@@ -240,8 +269,8 @@ closest_updiagonal_line x y =
         dir = if x >= y then Forwards else Backwards
     in
         case l of
-            Vertical z _ -> (UpDiagonal z dir, d)
-            _ -> (UpDiagonal 0 Forwards, 2)
+            (_,Vertical z) -> ((dir,UpDiagonal z), d)
+            _ -> ((Forwards,UpDiagonal 0), 2)
 
 lowest default values = case values of
     [] -> default
@@ -251,8 +280,8 @@ lowest default values = case values of
         in
             if lk<k then (lv,lk) else (v,k)
         
-closest_line : Float -> Float -> Line
-closest_line x y =
+closest_line : (Float,Float) -> (Direction,Line)
+closest_line (x,y) =
     let
         lines = [ closest_horizontal_line x y
                 , closest_vertical_line x y
@@ -260,40 +289,51 @@ closest_line x y =
                 , closest_downdiagonal_line x y
                 ]
     in
-        first <| lowest (Horizontal 0 Forwards, 2.0) lines
+        first <| lowest ((Forwards,Horizontal 0), 2.0) lines
 
-fold : Line -> Point -> Point
-fold line p = 
+side_of : Line -> (Float,Float) -> Direction
+side_of line (x,y) = 
+    let 
+        left = case line of
+            Horizontal z -> y > (toFloat z)
+            Vertical z -> x > (toFloat z)
+            UpDiagonal z -> x > (-y + 2*(toFloat z))
+            DownDiagonal z -> x > (y - 2*(toFloat z))
+    in
+        if left then Backwards else Forwards
+
+fold : (Direction,Line) -> Point -> Point
+fold (dir,line) p = 
     let
         (px,py) = p
         rp = reflect line p
     in
         case line of
-            Horizontal y dir ->
+            Horizontal y ->
                 case dir of
                     Forwards -> if py > y then rp else p
                     Backwards -> if py < y then rp else p
-            Vertical x dir ->
+            Vertical x ->
                 case dir of
                     Forwards -> if px > x then rp else p
                     Backwards -> if px < x then rp else p
-            DownDiagonal z dir -> 
+            DownDiagonal z -> 
                 case dir of
                     Forwards -> if px > py-2*z then rp else p
                     Backwards -> if px < py-2*z then rp else p
-            UpDiagonal z dir -> 
+            UpDiagonal z -> 
                 case dir of
                     Forwards -> if px > 2*z-py then rp else p
                     Backwards -> if px < 2*z-py then rp else p
                     
-unfold line p = [p, fold line p]
+unfold (dir,line) p = [p, fold (dir,line) p]
 
 reflect : Line -> Point -> Point
 reflect line (px,py) = case line of
-    Horizontal y dir -> (px,2*y - py)
-    Vertical x dir -> (2*x - px,py)
-    DownDiagonal z dir -> (py-2*z, px+2*z)
-    UpDiagonal z dir -> (-py+2*z, 2*z-px)
+    Horizontal y -> (px,2*y - py)
+    Vertical x -> (2*x - px,py)
+    DownDiagonal z -> (py-2*z, px+2*z)
+    UpDiagonal z -> (-py+2*z, 2*z-px)
 
 
 -- SUBSCRIPTIONS
@@ -315,16 +355,16 @@ view : Model -> Document Msg
 view model = 
   { title = "Gaussian Origami"
   , body =
-      [ div [] 
-        [ button [ Html.Events.onClick Toggle] [ Html.text <| describeCommand model.command ]
-        , button [ Html.Events.onClick ZoomIn] [ Html.text "Zoom in" ]
-        , button [ Html.Events.onClick ZoomOut] [ Html.text "Zoom out" ]
-        , button [ Html.Events.onClick Undo] [ Html.text "Undo" ]
-        , button [ Html.Events.onClick Redo] [ Html.text "Redo" ]
-        , Html.text <| show_steps model
---        , Html.text <| debugstring model
+      [ div [HA.id "controls"] 
+        [ button [HA.id "command", Html.Events.onClick Toggle] [ Html.text <| describeCommand model.command ]
+        , button [HA.id "zoom-in", Html.Events.onClick ZoomIn] [ Html.text "Zoom in" ]
+        , button [HA.id "zoom-out", Html.Events.onClick ZoomOut] [ Html.text "Zoom out" ]
+        , button [HA.id" undo", Html.Events.onClick Undo] [ Html.text "Undo" ]
+        , button [HA.id "redo", Html.Events.onClick Redo] [ Html.text "Redo" ]
+        , div [HA.id "steps"] [Html.text <| show_steps model]
         ]
       , viewSVG model
+      , viewRules
       ]
   }
   
@@ -334,10 +374,10 @@ describeCommand cmd = case cmd of
 
 step_separator = "!"
 
-parseQuery : Url -> List (Command,Line)
+parseQuery : Url -> List Move
 parseQuery url = ((QP.string "steps" |> QP.map (Maybe.map <| String.split step_separator) |> query |> parse) {url | path=""}) |> Maybe.withDefault (Just []) >> Maybe.map parseSteps >> Maybe.map (Maybe.withDefault []) >> Maybe.withDefault []
 
-parseSteps : List String -> Maybe (List (Command, Line))
+parseSteps : List String -> Maybe (List Move)
 parseSteps = List.map parseStep >> maybeAll
 
 maybeAll : List (Maybe a) -> Maybe (List a)
@@ -347,7 +387,7 @@ maybeAll l = case l of
         Just x -> maybeAll rest |> Maybe.andThen (\r -> Just (x::r))
         Nothing -> Nothing
 
-parseStep : String -> Maybe (Command, Line)
+parseStep : String -> Maybe Move
 parseStep s = 
     let
         cmds = Dict.fromList
@@ -369,22 +409,22 @@ parseStep s =
         direction = Dict.get (String.slice 2 3 s) directions
         z = String.dropLeft 3 s |> String.toInt
     in
-        Maybe.map4 (\c -> \o -> \d -> \i -> (c,o i d)) cmd orientation direction z
+        Maybe.map4 (\c -> \o -> \d -> \i -> (c,d,o i)) cmd orientation direction z
 
 
 buildQuery : Model -> String
 buildQuery model = List.map (second >> buildStep) model.previous |> List.reverse |> String.join step_separator |> (\s -> toQuery [UB.string "steps" s]) |> String.dropLeft 1
         
-buildStep (cmd,line) =
+buildStep (cmd,dir,line) =
     let
         c = case cmd of
             Fold -> "f"
             Unfold -> "u"
         (o,zz,dd) = case line of
-            Horizontal z dir -> ("h",z,dir)
-            Vertical z dir -> ("v",z,dir)
-            UpDiagonal z dir -> ("u",z,dir)
-            DownDiagonal z dir -> ("d",z,dir)
+            Horizontal z -> ("h",z,dir)
+            Vertical z -> ("v",z,dir)
+            UpDiagonal z -> ("u",z,dir)
+            DownDiagonal z -> ("d",z,dir)
         i = String.fromInt zz
         d = case dd of
             Forwards -> "f"
@@ -409,10 +449,16 @@ draw_bound = 100
 viewSVG model =
     let
         pointset = Set.fromList model.points
-        nextpoints = Set.fromList <| do_command (make_command model) model.points
-        newpoints = Set.toList <| Set.diff nextpoints pointset
-        disappearingpoints = Set.toList <| Set.diff pointset nextpoints
-        fixedpoints = Set.toList <| Set.intersect pointset nextpoints
+        nextpoints = Maybe.map (\cmd -> do_command cmd model.points) (make_command model) |> Maybe.map Set.fromList
+        newpoints = case nextpoints of
+            Nothing -> []
+            Just ps -> Set.toList <| Set.diff ps pointset
+        disappearingpoints = case nextpoints of
+            Nothing -> []
+            Just ps -> Set.toList <| Set.diff pointset ps
+        fixedpoints = case nextpoints of
+            Nothing -> model.points
+            Just ps -> Set.toList <| Set.intersect pointset ps
         all_points : List (PointStatus,Point)
         all_points = 
                (List.map (\p -> (FixedPoint,p)) fixedpoints)
@@ -420,6 +466,9 @@ viewSVG model =
             ++ (List.map (\p -> (Appearing,p)) newpoints)
         scale = model.scale
         vb = String.join " " <| List.map String.fromInt [-scale, -scale, 2*scale, 2*scale]
+        view_selected_line = case model.selectedLine of
+            Nothing -> []
+            Just l -> [view_line Selected l]
     in
         svg
             [ viewBox vb
@@ -432,25 +481,25 @@ viewSVG model =
                         (Decode.at ["detail", "y"] Decode.float) 
             ]
             (
-               List.map view_vertical_line (List.range -draw_bound draw_bound)
-            ++ List.map view_horizontal_line (List.range -draw_bound draw_bound)
-            ++ List.map view_updiagonal_line (List.range -draw_bound draw_bound)
-            ++ List.map view_downdiagonal_line (List.range -draw_bound draw_bound)
+               List.concatMap ((\z -> [Horizontal z,Vertical z,UpDiagonal z,DownDiagonal z]) >> List.map (view_line Normal)) (List.range -draw_bound draw_bound)
             ++ [view_closest_line model]
             ++ [view_points model all_points]
             )
     
 view_closest_line model =
     let
-        (x,y) = model.mouse
-        line = closest_line x y
+        (dir,line) = closest_line model.mouse
+        deselecting = model.selectedLine == Just (closest_line model.mouse |> second)
+        style = if deselecting then Deselecting else Selecting
+        closest = view_line style line
     in
-        view_line line
+        case model.selectedLine of
+            Nothing -> closest
+            Just sl -> if sl==line then closest else view_line Selected sl
         
 would_disappear model p =
     let
-        (mx,my) = model.mouse
-        line = closest_line mx my
+        line = closest_line model.mouse
         rp = fold line p
     in
         case model.command of
@@ -482,51 +531,52 @@ view_point model status p =
             ] []
         )
 
-line_width = "0.05"
+line_width = 0.05
 
-view_line line = case line of
-    Horizontal y d -> view_horizontal_line y
-    Vertical x d -> view_vertical_line x
-    UpDiagonal n d -> view_updiagonal_line n
-    DownDiagonal n d -> view_downdiagonal_line n
+view_line style line = 
+    let
+        ((x1i,y1i),(x2i,y2i)) = case line of
+            Horizontal y -> view_horizontal_line y
+            Vertical x -> view_vertical_line x
+            UpDiagonal n -> view_updiagonal_line n
+            DownDiagonal n -> view_downdiagonal_line n
+        style_attrs = case style of
+            Normal -> [ stroke "hsla(0,0%,0%,0.2)"
+                      , strokeWidth <| String.fromFloat line_width
+                      ]
+            Deselecting -> [ stroke "red"
+                           , strokeWidth <| String.fromFloat (2*line_width)
+                           ]
+            _ -> [ stroke "hsl(240,50%,50%)"
+                 , strokeWidth <| String.fromFloat (1.5*line_width)
+                 ]
+    in 
+        Svg.line (style_attrs ++ [x1 <| String.fromInt x1i, x2 <| String.fromInt x2i, y1 <| String.fromInt y1i, y2 <| String.fromInt y2i]) []
 
-view_vertical_line : Int -> Svg Msg
-view_vertical_line x = line 
-  [ x1 <| String.fromInt x
-  , x2 <| String.fromInt x
-  , y1 <| String.fromInt (-draw_bound)
-  , y2 <| String.fromInt (draw_bound)
-  , stroke "hsla(0,0%,0%,0.2)"
-  , strokeWidth line_width
-  ] []
+view_vertical_line : Int -> (Point,Point)
+view_vertical_line x = ((x,-draw_bound),(x,draw_bound))
 
-view_horizontal_line : Int -> Svg Msg
-view_horizontal_line x = line 
-  [ y1 <| String.fromInt x
-  , y2 <| String.fromInt x
-  , x1 <| String.fromInt (-draw_bound)
-  , x2 <| String.fromInt (draw_bound)
-  , stroke "hsla(0,0%,0%,0.2)"
-  , strokeWidth line_width
-  ] []
+view_horizontal_line : Int -> (Point,Point)
+view_horizontal_line x = ((-draw_bound,x),(draw_bound,x))
 
-view_updiagonal_line : Int -> Svg Msg
-view_updiagonal_line x = line 
-  [ x1 <| String.fromInt (-draw_bound)
-  , x2 <| String.fromInt (draw_bound)
-  , y1 <| String.fromInt (2*x+draw_bound)
-  , y2 <| String.fromInt (2*x-draw_bound)
-  , stroke "hsla(0,0%,0%,0.2)"
-  , strokeWidth line_width
-  ] []
+view_updiagonal_line : Int -> (Point,Point)
+view_updiagonal_line x = ((-draw_bound,2*x+draw_bound),(draw_bound,2*x-draw_bound))
 
-view_downdiagonal_line : Int -> Svg Msg
-view_downdiagonal_line x = line 
-  [
-    x1 <| String.fromInt (-draw_bound)
-  , x2 <| String.fromInt (draw_bound)
-  , y1 <| String.fromInt (2*x-draw_bound)
-  , y2 <| String.fromInt (2*x+draw_bound)
-  , stroke "hsla(0,0%,0%,0.2)"
-  , strokeWidth line_width
-  ] []
+view_downdiagonal_line : Int -> (Point,Point)
+view_downdiagonal_line x = ((-draw_bound,2*x-draw_bound),(draw_bound,2*x+draw_bound))
+
+para content = Html.p [] [Html.text content]
+
+viewRules : Html Msg
+viewRules = Markdown.toHtml [] """
+# Gaussian origami
+
+There are two things you can do:
+
+* *Fold* - remove every point on one side of a line, and add their mirror images on the other side.
+* *Unfold* - keep all the existing points, and add the mirror images of the points on one side of the line.
+
+To fold or unfold, click a line to select it, then click on the side of the line that you want to fold/unfold to.
+
+What patterns can you make?
+"""
