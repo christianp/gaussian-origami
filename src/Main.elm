@@ -334,7 +334,8 @@ describeCommand cmd = case cmd of
 
 step_separator = "!"
 
-parseQuery = (QP.string "steps" |> QP.map (Maybe.map <| String.split step_separator) |> query |> parse) >> Maybe.withDefault (Just []) >> Maybe.map parseSteps >> Maybe.map (Maybe.withDefault []) >> Maybe.withDefault []
+parseQuery : Url -> List (Command,Line)
+parseQuery url = ((QP.string "steps" |> QP.map (Maybe.map <| String.split step_separator) |> query |> parse) {url | path=""}) |> Maybe.withDefault (Just []) >> Maybe.map parseSteps >> Maybe.map (Maybe.withDefault []) >> Maybe.withDefault []
 
 parseSteps : List String -> Maybe (List (Command, Line))
 parseSteps = List.map parseStep >> maybeAll

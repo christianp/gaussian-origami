@@ -6176,16 +6176,8 @@ var $elm$url$Url$Parser$Query$string = function (key) {
 			}
 		});
 };
-var $author$project$Main$parseQuery = A2(
-	$elm$core$Basics$composeR,
-	$elm$url$Url$Parser$parse(
-		$elm$url$Url$Parser$query(
-			A2(
-				$elm$url$Url$Parser$Query$map,
-				$elm$core$Maybe$map(
-					$elm$core$String$split($author$project$Main$step_separator)),
-				$elm$url$Url$Parser$Query$string('steps')))),
-	A2(
+var $author$project$Main$parseQuery = function (url) {
+	return A3(
 		$elm$core$Basics$composeR,
 		$elm$core$Maybe$withDefault(
 			$elm$core$Maybe$Just(_List_Nil)),
@@ -6196,7 +6188,18 @@ var $author$project$Main$parseQuery = A2(
 				$elm$core$Basics$composeR,
 				$elm$core$Maybe$map(
 					$elm$core$Maybe$withDefault(_List_Nil)),
-				$elm$core$Maybe$withDefault(_List_Nil)))));
+				$elm$core$Maybe$withDefault(_List_Nil))),
+		$elm$url$Url$Parser$parse(
+			$elm$url$Url$Parser$query(
+				A2(
+					$elm$url$Url$Parser$Query$map,
+					$elm$core$Maybe$map(
+						$elm$core$String$split($author$project$Main$step_separator)),
+					$elm$url$Url$Parser$Query$string('steps'))))(
+			_Utils_update(
+				url,
+				{path: ''})));
+};
 var $author$project$Main$init = F3(
 	function (_v0, url, key) {
 		var steps = $author$project$Main$parseQuery(url);
